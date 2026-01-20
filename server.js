@@ -217,7 +217,8 @@ async function refundCredit(userId, paymentSource) {
 async function processAndUploadPDF(pdfUrl, fileName) {
     const tempDir = path.join(__dirname, 'temp');
     const inputPath = path.join(tempDir, `input_${Date.now()}.pdf`);
-    const outputPath = path.join(tempDir, `output_${Date.now()}.pdf`);
+    const removedPath = path.join(tempDir, `removed_${Date.now()}.pdf`);
+    const compressedPath = path.join(tempDir, `compressed_${Date.now()}.pdf`);
     
     try {
         // Ensure temp directory exists
@@ -230,25 +231,43 @@ async function processAndUploadPDF(pdfUrl, fileName) {
         
         const inputSize = response.data.length;
         console.log(`Input PDF size: ${(inputSize / 1024 / 1024).toFixed(2)}MB`);
-        console.log('Removing first page using qpdf (preserves compression)...');
         
-        // Use qpdf to remove first page (preserves all compression)
-        // This works by manipulating page references without decompressing content
-        const qpdfCommand = `qpdf --pages "${inputPath}" 2-z -- "${outputPath}"`;
+        // Step 1: Remove first page using pdf-lib
+        console.log('Removing first page...');
+        const { PDFDocument } = require('pdf-lib');
+        const pdfBytes = response.data;
+        const pdfDoc = await PDFDocument.load(pdfBytes);
+        const totalPages = pdfDoc.getPageCount();
+        console.log(`PDF has ${totalPages} pages, removing first page...`);
+        
+        const newPdfDoc = await PDFDocument.create();
+        for (let i = 1; i < totalPages; i++) {
+            const [copiedPage] = await newPdfDoc.copyPages(pdfDoc, [i]);
+            newPdfDoc.addPage(copiedPage);
+        }
+        
+        const modifiedPdfBytes = await newPdfDoc.save();
+        await fs.writeFile(removedPath, modifiedPdfBytes);
+        console.log('First page removed successfully');
+        
+        // Step 2: Compress using Ghostscript
+        console.log('Compressing PDF with Ghostscript...');
+        const gsCommand = `gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/ebook -dNOPAUSE -dQUIET -dBATCH -dDetectDuplicateImages -dCompressFonts=true -r150x150 -sOutputFile="${compressedPath}" "${removedPath}"`;
         
         try {
-            await execAsync(qpdfCommand);
-            console.log('First page removed successfully with qpdf');
+            await execAsync(gsCommand);
+            console.log('PDF compressed successfully with Ghostscript');
             
-            const outputSize = (await fs.stat(outputPath)).size;
-            console.log(`Output PDF size: ${(outputSize / 1024 / 1024).toFixed(2)}MB`);
-        } catch (qpdfError) {
-            console.error('qpdf error:', qpdfError.message);
-            throw new Error('qpdf not found. On Render, it installs automatically. Locally, install: choco install qpdf (Windows) or brew install qpdf (Mac)');
+            const compressedSize = (await fs.stat(compressedPath)).size;
+            console.log(`Compressed PDF size: ${(compressedSize / 1024 / 1024).toFixed(2)}MB`);
+        } catch (gsError) {
+            console.warn('Ghostscript compression failed, using uncompressed PDF:', gsError.message);
+            // Use the uncompressed version if Ghostscript fails
+            await fs.copyFile(removedPath, compressedPath);
         }
         
         // Read the processed PDF
-        const processedPdf = await fs.readFile(outputPath);
+        const processedPdf = await fs.readFile(compressedPath);
         
         // Upload to Cloudinary
         console.log('Uploading modified PDF to Cloudinary...');
@@ -280,7 +299,8 @@ async function processAndUploadPDF(pdfUrl, fileName) {
         // Clean up temp files
         try {
             await fs.unlink(inputPath).catch(() => {});
-            await fs.unlink(outputPath).catch(() => {});
+            await fs.unlink(removedPath).catch(() => {});
+            await fs.unlink(compressedPath).catch(() => {});
         } catch (cleanupError) {
             console.error('Error cleaning up temp files:', cleanupError.message);
         }
