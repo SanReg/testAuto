@@ -1,8 +1,8 @@
 FROM node:20-slim
 
-# Install Ghostscript for PDF compression and build essentials
+# Install qpdf for fast PDF page removal (preserves compression)
 RUN apt-get update && \
-    apt-get install -y ghostscript build-essential python3 && \
+    apt-get install -y qpdf build-essential python3 && \
     rm -rf /var/lib/apt/lists/*
 
 # Set working directory
