@@ -233,7 +233,7 @@ async function processAndUploadPDF(pdfUrl, fileName) {
         
         // Use qpdf to remove first page (fast, preserves compression)
         console.log('Removing first page using qpdf...');
-        const qpdfCommand = `qpdf --pages "${inputPath}" 2-z -- "${outputPath}"`;
+        const qpdfCommand = `qpdf --pages '${inputPath}' 2-z -- '${outputPath}'`;
         
         try {
             await execAsync(qpdfCommand);
