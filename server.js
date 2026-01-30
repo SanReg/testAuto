@@ -486,7 +486,8 @@ async function startPolling(historyId, token, orderId) {
 }
 
 // Start change stream to listen for new orders
-function startChangeStream() {
+
+function startChangeStream(retryCount = 0) {
     if (isAutomationRunning) {
         console.log('Change stream already running');
         return;
@@ -507,6 +508,19 @@ function startChangeStream() {
     changeStream.on('error', (error) => {
         console.error('Change stream error:', error);
         isAutomationRunning = false;
+        if (changeStream) {
+            try { changeStream.close(); } catch (e) {}
+            changeStream = null;
+        }
+        // Exponential backoff for reconnection
+        const maxRetries = 10;
+        const delay = Math.min(30000, 1000 * Math.pow(2, retryCount)); // up to 30s
+        if (retryCount < maxRetries) {
+            console.log(`Attempting to restart change stream in ${delay / 1000}s (retry ${retryCount + 1}/${maxRetries})...`);
+            setTimeout(() => startChangeStream(retryCount + 1), delay);
+        } else {
+            console.error('Max retries reached. Change stream will not restart automatically.');
+        }
     });
 }
 
