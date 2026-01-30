@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: fileUpPro
+    runtime: docker
+    region: oregon
+    plan: standard
+    
+    # Environment variables
+    envVars:
+      - key: MONGODB_URI
+        sync: false
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+    
+    # Health check
+    healthCheckPath: /health
+    healthCheckInterval: 30
+    
+    # Auto-deploy on push
+    autoDeploy: true
