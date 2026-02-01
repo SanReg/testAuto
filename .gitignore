@@ -10,6 +10,7 @@ yarn-error.log
 .env.*.local
 
 # Temp files
+desktop.ini
 temp/
 tmp/
 *.tmp
