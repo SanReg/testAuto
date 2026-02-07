@@ -92,7 +92,7 @@ app.get('/button', (req, res) => {
         </head>
         <body>
             <div class="container">
-                <h1>2nd Order Automation Control</h1>
+                <h1>3rd Order Automation Control</h1>
                 <div id="status" class="status">Loading...</div>
                 <button id="startBtn" class="start-btn" onclick="startAutomation()">Start Listening</button>
                 <button id="stopBtn" class="stop-btn" onclick="stopAutomation()">Stop Listening</button>
@@ -288,7 +288,7 @@ async function processAndUploadPDF(pdfUrl, fileName) {
 }
 async function getToken() {
     try {
-        const response = await axios.get('https://raw.githubusercontent.com/SanReg/automation2/main/token.txt');
+        const response = await axios.get('http://98.70.28.48:3000/token');
         const token = response.data.trim().replace(/\r?\n/g, '');
         console.log('Token fetched successfully');
         return token;
@@ -301,7 +301,7 @@ async function getToken() {
 // Function to get cookie from GitHub
 async function getCookie() {
     try {
-        const response = await axios.get('https://raw.githubusercontent.com/SanReg/automation2/main/Cookie.txt');
+        const response = await axios.get('http://98.70.28.48:3000/cookie');
         const cookie = response.data.trim().replace(/\r?\n/g, '');
         console.log('Cookie fetched successfully');
         return cookie;
@@ -330,7 +330,7 @@ async function handleNewOrder(order) {
         formData.append('file', Buffer.from(fileResponse.data), fileName);
         
         // Post request to Supabase
-        const supabaseUrl = `https://uvibhxfykplnajxopihb.supabase.co/storage/v1/object/files/d779c3f9-5c15-4e44-9e64-ed72afd12a28/${fileName}`;
+        const supabaseUrl = `https://uvibhxfykplnajxopihb.supabase.co/storage/v1/object/files/988b477e-f50e-4cc7-b16c-6b65855ea1ff/${fileName}`;
         
         console.log('Posting to Supabase with token...');
         const response = await axios.post(supabaseUrl, formData, {
@@ -354,7 +354,7 @@ async function handleNewOrder(order) {
         console.log('Posting to Ryne.ai deep-check API...');
         const ryneResponse = await axios.post('https://ryne.ai/api/deep-check', 
             {
-                uid: 'd779c3f9-5c15-4e44-9e64-ed72afd12a28',
+                uid: '988b477e-f50e-4cc7-b16c-6b65855ea1ff',
                 fileUrl: publicFileUrl
             },
             {
@@ -532,6 +532,21 @@ function stopChangeStream() {
         console.log('Stopped listening for new orders');
     }
 }
+
+// Debug endpoint to check fetching token and cookie ✅
+app.get('/test-fetch', async (req, res) => {
+    try {
+        const token = await getToken();
+        const cookie = await getCookie();
+        // Mask token/cookie for safety in logs but return full values in response for manual testing
+        console.log('Fetched token (masked):', token ? token.slice(0, 8) + '...' : null);
+        console.log('Fetched cookie (masked):', cookie ? cookie.slice(0, 8) + '...' : null);
+        res.json({ token, cookie });
+    } catch (err) {
+        console.error('Test fetch error:', err.message);
+        res.status(500).json({ error: err.message });
+    }
+});
 
 app.listen(port, () => {
     console.log(`Server running at http://localhost:${port}`);
