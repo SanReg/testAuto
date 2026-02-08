@@ -290,7 +290,7 @@ async function processAndUploadPDF(pdfUrl, fileName) {
 }
 async function getToken() {
     try {
-        const response = await axios.get('http://98.70.28.48:3000/token');
+        const response = await axios.get('https://raw.githubusercontent.com/SanReg/automation2/main/token.txt');
         const token = response.data.trim().replace(/\r?\n/g, '');
         console.log('Token fetched successfully');
         return token;
@@ -303,7 +303,7 @@ async function getToken() {
 // Function to get cookie from GitHub
 async function getCookie() {
     try {
-        const response = await axios.get('http://98.70.28.48:3000/cookie');
+        const response = await axios.get('https://raw.githubusercontent.com/SanReg/automation2/main/Cookie.txt');
         const cookie = response.data.trim().replace(/\r?\n/g, '');
         console.log('Cookie fetched successfully');
         return cookie;
@@ -332,7 +332,7 @@ async function handleNewOrder(order) {
         formData.append('file', Buffer.from(fileResponse.data), fileName);
         
         // Post request to Supabase
-        const supabaseUrl = `https://uvibhxfykplnajxopihb.supabase.co/storage/v1/object/files/988b477e-f50e-4cc7-b16c-6b65855ea1ff/${fileName}`;
+        const supabaseUrl = `https://uvibhxfykplnajxopihb.supabase.co/storage/v1/object/files/d779c3f9-5c15-4e44-9e64-ed72afd12a28/${fileName}`;
         
         console.log('Posting to Supabase with token...');
         const response = await axios.post(supabaseUrl, formData, {
@@ -356,7 +356,7 @@ async function handleNewOrder(order) {
         console.log('Posting to Ryne.ai deep-check API...');
         const ryneResponse = await axios.post('https://ryne.ai/api/deep-check', 
             {
-                uid: '988b477e-f50e-4cc7-b16c-6b65855ea1ff',
+                uid: 'd779c3f9-5c15-4e44-9e64-ed72afd12a28',
                 fileUrl: publicFileUrl
             },
             {
