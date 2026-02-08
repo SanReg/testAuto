@@ -184,7 +184,9 @@ const orderSchema = new mongoose.Schema({
         similarityReport: {
             url: String
         }
-    }
+    },
+    turnitin_score: String,
+    turnitin_similarity: String
 }, { collection: 'orders' });
 
 const Order = mongoose.model('Order', orderSchema);
@@ -449,23 +451,43 @@ async function startPolling(historyId, token, orderId) {
                 clearInterval(intervalId);
                 
                 try {
-                    // Process both PDFs: remove first page and upload to Cloudinary
-                    console.log('Processing AI report PDF...');
-                    const aiReportUrl = await processAndUploadPDF(first.turnitin_report_url, 'ai_report');
-                    
-                    console.log('Processing similarity report PDF...');
-                    const similarityReportUrl = await processAndUploadPDF(first.turnitin_similarity_report_url, 'similarity_report');
-                    
-                    // Update order with Cloudinary URLs
-                    await finalizeOrder({
-                        'adminFiles.aiReport.url': aiReportUrl,
-                        'adminFiles.similarityReport.url': similarityReportUrl,
-                        status: 'completed'
-                    });
-                    console.log('PDFs processed, uploaded to Cloudinary, and order updated');
+                    const updates = {};
+
+                    // Store Turnitin score and similarity; use '*' when score < 20
+                    if (first.turnitin_score !== undefined && first.turnitin_score !== null) {
+                        const scoreNum = Number(first.turnitin_score);
+                        updates.turnitin_score = (!isNaN(scoreNum) && scoreNum < 20) ? '*' : String(first.turnitin_score);
+                    }
+
+                    if (first.turnitin_similarity !== undefined && first.turnitin_similarity !== null) {
+                        updates.turnitin_similarity = String(first.turnitin_similarity);
+                    }
+
+                    // Conditionally process PDFs only if URLs are present
+                    if (first.turnitin_report_url) {
+                        console.log('Processing AI report PDF...');
+                        const aiReportUrl = await processAndUploadPDF(first.turnitin_report_url, 'ai_report');
+                        updates['adminFiles.aiReport.url'] = aiReportUrl;
+                    } else {
+                        console.log('No AI report URL provided, skipping AI report processing');
+                    }
+
+                    if (first.turnitin_similarity_report_url) {
+                        console.log('Processing similarity report PDF...');
+                        const similarityReportUrl = await processAndUploadPDF(first.turnitin_similarity_report_url, 'similarity_report');
+                        updates['adminFiles.similarityReport.url'] = similarityReportUrl;
+                    } else {
+                        console.log('No similarity report URL provided, skipping similarity report processing');
+                    }
+
+                    // Mark order completed regardless of which PDFs were available
+                    updates.status = 'completed';
+
+                    await finalizeOrder(updates);
+                    console.log('Turnitin data and available PDFs processed; order updated');
                 } catch (processError) {
-                    console.error('Error processing PDFs:', processError.message);
-                    // If processing fails, mark order as failed
+                    console.error('Error processing PDFs or storing Turnitin data:', processError.message);
+                    // If processing fails for an available PDF, mark order as failed
                     await finalizeOrder({
                         status: 'failed',
                         failureReason: 'Failed to process report PDFs'
