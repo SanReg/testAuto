@@ -92,7 +92,7 @@ app.get('/button', (req, res) => {
         </head>
         <body>
             <div class="container">
-                <h1>3rd Order Automation Control</h1>
+                <h1>1st Order Automation Control</h1>
                 <div id="status" class="status">Loading...</div>
                 <button id="startBtn" class="start-btn" onclick="startAutomation()">Start Listening</button>
                 <button id="stopBtn" class="stop-btn" onclick="stopAutomation()">Stop Listening</button>
@@ -290,7 +290,7 @@ async function processAndUploadPDF(pdfUrl, fileName) {
 }
 async function getToken() {
     try {
-        const response = await axios.get('https://raw.githubusercontent.com/SanReg/automation2/main/token.txt');
+        const response = await axios.get('https://raw.githubusercontent.com/SanReg/automation/main/token.txt');
         const token = response.data.trim().replace(/\r?\n/g, '');
         console.log('Token fetched successfully');
         return token;
@@ -303,7 +303,7 @@ async function getToken() {
 // Function to get cookie from GitHub
 async function getCookie() {
     try {
-        const response = await axios.get('https://raw.githubusercontent.com/SanReg/automation2/main/Cookie.txt');
+        const response = await axios.get('https://raw.githubusercontent.com/SanReg/automation/main/Cookie.txt');
         const cookie = response.data.trim().replace(/\r?\n/g, '');
         console.log('Cookie fetched successfully');
         return cookie;
@@ -332,7 +332,7 @@ async function handleNewOrder(order) {
         formData.append('file', Buffer.from(fileResponse.data), fileName);
         
         // Post request to Supabase
-        const supabaseUrl = `https://uvibhxfykplnajxopihb.supabase.co/storage/v1/object/files/d779c3f9-5c15-4e44-9e64-ed72afd12a28/${fileName}`;
+        const supabaseUrl = `https://uvibhxfykplnajxopihb.supabase.co/storage/v1/object/files/bfbaac84-216b-4955-aa9e-ea25f4563e15/${fileName}`;
         
         console.log('Posting to Supabase with token...');
         const response = await axios.post(supabaseUrl, formData, {
@@ -356,7 +356,7 @@ async function handleNewOrder(order) {
         console.log('Posting to Ryne.ai deep-check API...');
         const ryneResponse = await axios.post('https://ryne.ai/api/deep-check', 
             {
-                uid: 'd779c3f9-5c15-4e44-9e64-ed72afd12a28',
+                uid: 'bfbaac84-216b-4955-aa9e-ea25f4563e15',
                 fileUrl: publicFileUrl
             },
             {
